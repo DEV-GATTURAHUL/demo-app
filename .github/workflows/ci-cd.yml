@@ -1,0 +1,45 @@
+name: Build and push to GHCR
+
+# 1. When does this run?
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-push:
+    # 2. What OS does the cloud runner use?
+    runs-on: ubuntu-latest
+
+    # 3. Permissions needed for the runner to write to GHCR
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+    # Step A: Download your code into the runner
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # Step B: Log the runner into the registry
+    - name: Log in to Github Container Registry
+      uses: docker/login-action@v3
+      with: 
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.Github_TOKEN }}
+
+    # Step C: Extract metadata (tags/ labels) for Docker
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ghcr.io/${{ github.repository }}
+
+    # Step D: Build the image and push it to GHCR
+    - name: Build and Push Docker Image
+      uses: docker/build-push-action@v5
+      with: 
+        context: .
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+
